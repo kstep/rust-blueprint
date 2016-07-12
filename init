@@ -36,7 +36,7 @@ do_import() {
     find . -type d -name .git -prune -o -type f -not -name init -printf 'cat <<DATA\nM 10%#m inline %P\ndata %s\nDATA\ncat %p\necho\n' | sh -
 }
 
-case "${GH_USER}" in
+case "$1" in
     -h|--help) usage ;;
 esac
 
