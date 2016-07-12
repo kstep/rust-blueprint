@@ -1,0 +1,61 @@
+#!/bin/sh
+
+GH_USER="$1"
+GH_SLUG="$2"
+
+NAME="$(basename "${PWD}")"
+GIT_USER="$(git config user.name)"
+GIT_EMAIL="$(git config user.email)"
+GIT_BRANCH="master"
+YEAR="$(date +%Y)"
+
+if [ -z "${GH_SLUG}" ]; then
+    GH_SLUG="${GH_USER}"
+    GH_USER="$(git config github.user)"
+fi
+
+if [ -z "${GH_SLUG}" ]; then
+    GH_SLUG="${NAME}"
+fi
+
+usage() {
+    echo "Usage:"
+    echo ""
+    echo "  ./init [<github-user>] <github-slug>"
+    echo ""
+    echo "You can omit <github-user> if you have git config github.user set up."
+    exit 0
+}
+
+do_import() {
+    echo "commit refs/heads/${GIT_BRANCH}"
+    echo "committer ${GIT_USER} <${GIT_EMAIL}> now"
+    echo "data 14"
+    echo "initial commit"
+
+    find . -type d -name .git -prune -o -type f -not -name init -printf 'cat <<DATA\nM 10%#m inline %P\ndata %s\nDATA\ncat %p\necho\n' | sh -
+}
+
+case "${GH_USER}" in
+    -h|--help) usage ;;
+esac
+
+echo "Initializing project ${NAME} on https://github.com/${GH_USER}/${GH_SLUG}..." 2>&1
+
+echo "Setting up Cargo.toml and licenses..."
+sed -e "s/@@NAME@@/${NAME}/g" \
+    -e "s/@@GIT_USER@@/${GIT_USER}/g" \
+    -e "s/@@GIT_EMAIL@@/${GIT_EMAIL}/g" \
+    -e "s/@@GH_USER@@/${GH_USER}/g" \
+    -e "s/@@GH_SLUG@@/${GH_SLUG}/g" \
+    -e "s/@@YEAR@@/${YEAR}/g" \
+    -i Cargo.toml LICENSE-MIT
+
+echo "Setting up git..."
+git remote set-url origin git@github.com:${GH_USER}/${GH_SLUG}.git
+do_import | git fast-import --date-format=now --quiet --force
+git reset --hard # && git push --set-upstream origin "${BRANCH}"
+
+echo "All done!"
+echo "Happy coding!"
+
