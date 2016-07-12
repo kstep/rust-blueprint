@@ -40,9 +40,9 @@ case "${GH_USER}" in
     -h|--help) usage ;;
 esac
 
-echo "Initializing project ${NAME} on https://github.com/${GH_USER}/${GH_SLUG}..." 2>&1
+echo "Initializing project ${NAME} on https://github.com/${GH_USER}/${GH_SLUG}..." >&2
 
-echo "Setting up Cargo.toml and licenses..."
+echo "Setting up Cargo.toml and licenses..." >&2
 sed -e "s/@@NAME@@/${NAME}/g" \
     -e "s/@@GIT_USER@@/${GIT_USER}/g" \
     -e "s/@@GIT_EMAIL@@/${GIT_EMAIL}/g" \
@@ -51,11 +51,25 @@ sed -e "s/@@NAME@@/${NAME}/g" \
     -e "s/@@YEAR@@/${YEAR}/g" \
     -i Cargo.toml LICENSE-MIT
 
-echo "Setting up git..."
+echo "Setting up git..." >&2
 git remote set-url origin git@github.com:${GH_USER}/${GH_SLUG}.git
 do_import | git fast-import --date-format=now --quiet --force
 git reset --hard # && git push --set-upstream origin "${BRANCH}"
 
-echo "All done!"
-echo "Happy coding!"
+TRAVIS="$(which travis)"
+if [ -z "${TRAVIS}" ]; then
+    echo "No travis cli found. Install travis cli and add github token for travis manually:" >&2
+    echo "travis encrypt GH_TOKEN=YOUR-TOKEN-HERE --add env.global" >&2
+else
+    if [ -n "${GH_TOKEN}" ]; then
+        echo "Setting up Travis CI token..." >&2
+        ${TRAVIS} encrypt GH_TOKEN="${GH_TOKEN}" --add env.global
+    else
+        echo "No GH_TOKEN env var set. Add github token for travis manually:" >&2
+        echo "travis encrypt GH_TOKEN=YOUR-TOKEN-HERE --add env.global" >&2
+    fi
+fi
+
+echo "All done!" >&2
+echo "Happy coding!" >&2
 
