@@ -1,0 +1,18 @@
+[package]
+authors = ["Konstantin Stepanov <me@kstep.me>"]
+build = "build.rs"
+description = "Rust Blueprint"
+documentation = "http://kstep.me/rust-blueprint/rust-blueprint/index.html"
+keywords = []
+license = "MIT/Apache-2.0"
+name = "blueprint"
+repository = "https://github.com/kstep/rust-blueprint"
+version = "0.1.0"
+readme = "README.md"
+
+[build-dependencies]
+
+[dependencies]
+
+[features]
+default = []
