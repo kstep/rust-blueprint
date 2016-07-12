@@ -55,6 +55,7 @@ echo "Setting up git..." >&2
 git remote set-url origin git@github.com:${GH_USER}/${GH_SLUG}.git
 do_import | git fast-import --date-format=now --quiet --force
 git reset --hard # && git push --set-upstream origin "${BRANCH}"
+git branch --set-upstream-to=origin "${GIT_BRANCH}"
 
 TRAVIS="$(which travis)"
 if [ -z "${TRAVIS}" ]; then
