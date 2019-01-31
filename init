@@ -18,6 +18,10 @@ if [ -z "${GH_SLUG}" ]; then
     GH_SLUG="${NAME}"
 fi
 
+if [ -z "${GH_TOKEN}" ]; then
+    GH_TOKEN="$(git config github.token)"
+fi
+
 usage() {
     echo "Usage:"
     echo ""
@@ -40,8 +44,6 @@ case "$1" in
     -h|--help) usage ;;
 esac
 
-echo "Initializing project ${NAME} on https://github.com/${GH_USER}/${GH_SLUG}..." >&2
-
 echo "Setting up Cargo.toml and licenses..." >&2
 sed -e "s/@@NAME@@/${NAME}/g" \
     -e "s/@@GIT_USER@@/${GIT_USER}/g" \
@@ -52,10 +54,27 @@ sed -e "s/@@NAME@@/${NAME}/g" \
     -i Cargo.toml LICENSE-MIT
 
 echo "Setting up git..." >&2
-git remote set-url origin git@github.com:${GH_USER}/${GH_SLUG}.git
 do_import | git fast-import --date-format=now --quiet --force
-git reset --hard # && git push --set-upstream origin "${BRANCH}"
+git reset --hard
+git remote set-url origin git@github.com:${GH_USER}/${GH_SLUG}.git
 git branch --set-upstream-to=origin "${GIT_BRANCH}"
+
+if [ -n "${GH_TOKEN}" ]; then
+    echo "Creating new repo ${NAME} on https://github.com/${GH_USER}/${GH_SLUG}..." >&2
+    if curl --request POST \
+        --header "Authorization: token ${GH_TOKEN}" \
+        --header "Content-Type: application/json" \
+        --data-binary "{\"name\": \"${GH_SLUG}\", \"description\": \"${NAME}\"}" \
+        --silent \
+        https://api.github.com/user/repos > /dev/null
+    then
+        git push origin "${BRANCH}"
+    else
+        echo "Error creating new github repo! Create it manually." >&2
+    fi
+else
+    echo "No GH_TOKEN env var set. Create github repository manually." >&2
+fi
 
 if TRAVIS="$(which travis 2>/dev/null)"; then
     if [ -n "${GH_TOKEN}" ]; then
